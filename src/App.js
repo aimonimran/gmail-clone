@@ -1,58 +1,56 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
+import React, { useEffect } from 'react';
+import { Route, Routes } from 'react-router-dom';
 import './App.css';
 
+import { routes } from './routes';
+import Header from './components/header';
+import Sidebar from './components/sidebar';
+import EmailList from './components/emailList.js';
+import SendMail from './components/sendMail.js';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectSendMessageIsOpen } from './features/mailSlice';
+import { login, selectUser } from './features/userSlice';
+import Login from './components/login';
+import { auth } from './firebase';
+
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
-    </div>
-  );
+	const sendMessageIsOpen = useSelector(selectSendMessageIsOpen);
+	const user = useSelector(selectUser);
+	const dispatch = useDispatch();
+
+	useEffect(() => {
+		auth.onAuthStateChanged((user) => {
+			if (user) {
+				dispatch(
+					login({
+						displayName: user.displayName,
+						email: user.email,
+						photoUrl: user.photoUrl
+					})
+				);
+			}
+		});
+	}, []);
+
+	return !user ? (
+		<Login />
+	) : (
+		<div className='app'>
+			<Header />
+
+			<div className='app__body'>
+				<Sidebar />
+				<Routes>
+					{routes.map((route, idx) => (
+						<Route key={idx} path={route.path} element={<route.component />} />
+					))}
+					<Route path='/*' element={<EmailList />} />
+				</Routes>
+			</div>
+
+			{sendMessageIsOpen && <SendMail />}
+		</div>
+	);
 }
 
 export default App;
